@@ -1,10 +1,8 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/app/components/AxiosInstance";
 
-/* UI helpers */
 const Box = ({ children }) => <div className="border rounded-md p-4">{children}</div>;
 const Label = ({ children }) => <div className="text-sm font-semibold mb-1">{children}</div>;
 const Input = (p) => (
@@ -30,7 +28,10 @@ const Select = ({ children, className, ...rest }) => (
 const Button = ({ children, className, ...rest }) => (
   <button
     {...rest}
-    className={"px-4 py-2 rounded border shadow-sm active:scale-[.99] " + (className || "")}
+    className={
+      "px-4 py-2 rounded border shadow-sm active:scale-[.99] transition-all cursor-pointer " +
+      (className || "")
+    }
     type="button"
   >
     {children}
@@ -43,15 +44,13 @@ export default function OrderFormPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
-  /* Header */
+  const [orderNo, setOrderNo] = useState("");
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
 
-  /* Lookups */
   const [companies, setCompanies] = useState([]);
   const [products, setProducts] = useState([]);
   const [stocks, setStocks] = useState([]);
 
-  /* Search controls (empty by default) */
   const [companyId, setCompanyId] = useState("");
   const [productId, setProductId] = useState("");
   const [partNo, setPartNo] = useState("");
@@ -59,12 +58,11 @@ export default function OrderFormPage() {
   const [price, setPrice] = useState("");
   const [qty, setQty] = useState("");
 
-  /* Order lines + editing */
   const [rows, setRows] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  /* Load lookups once */
+  // Load lookups
   useEffect(() => {
     (async () => {
       try {
@@ -83,33 +81,42 @@ export default function OrderFormPage() {
     })();
   }, []);
 
-  /* Load order (edit mode) */
+  // Load order (edit mode)
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || companies.length === 0) return;
     (async () => {
       try {
         const { data } = await AxiosInstance.get(`orders/${orderId}/`);
+        setOrderNo(data.order_no || "");
         if (data?.order_date) setOrderDate(data.order_date);
 
-        const rowsMapped =
-          (data?.items || []).map((it) => ({
-            product_id: it.product_id ?? it.product, // serializer exposes product_id
-            company_name: "", // will be displayed after company select/edit; optional
-            part_no: it?.product_details?.part_no ?? "",
-            product_name: it?.product_details?.product_name ?? "",
-            price: Number(it?.order_price || 0),
-            qty: Number(it?.quantity || 0),
-          })) || [];
+        const mapped =
+          (data?.items || []).map((it) => {
+            const companyId =
+              it?.product_details?.company?.id ||
+              it?.product_details?.company ||
+              null;
+            const companyName =
+              companies.find((c) => c.id === companyId)?.company_name || "";
+            return {
+              product_id: it.product_id ?? it.product,
+              company_name: companyName,
+              part_no: it?.product_details?.part_no ?? "",
+              product_name: it?.product_details?.product_name ?? "",
+              price: Number(it?.order_price || 0),
+              qty: Number(it?.quantity || 0),
+            };
+          }) || [];
 
-        setRows(rowsMapped);
+        setRows(mapped);
       } catch (e) {
         console.error(e);
         alert("Failed to load order.");
       }
     })();
-  }, [orderId]);
+  }, [orderId, companies]);
 
-  /* Derived lists per company */
+  // Filter products by company
   const productsForCompany = useMemo(() => {
     const id = Number(companyId);
     return products.filter((p) => p.company === id || p.company?.id === id);
@@ -119,13 +126,12 @@ export default function OrderFormPage() {
     () => productsForCompany.map((p) => ({ id: p.id, name: p.product_name, part: p.part_no })),
     [productsForCompany]
   );
-
   const partOptions = useMemo(
     () => productsForCompany.map((p) => ({ value: p.part_no, product_id: p.id })),
     [productsForCompany]
   );
 
-  /* keep stock/price in sync */
+  // Sync stock & price
   useEffect(() => {
     if (!productId && !partNo) {
       setCurrentStock(0);
@@ -147,7 +153,6 @@ export default function OrderFormPage() {
     setPrice(Number(st?.sale_price || prod.product_bdt || 0).toFixed(2));
   }, [productId, partNo, productsForCompany, partOptions, stocks]);
 
-  /* Controls helpers */
   const clearControls = () => {
     setProductId("");
     setPartNo("");
@@ -177,11 +182,8 @@ export default function OrderFormPage() {
 
     setRows((prev) => {
       const copy = [...prev];
-      if (editingIndex !== null) {
-        copy[editingIndex] = newRow; // replace (no doubling)
-      } else {
-        copy.push(newRow);
-      }
+      if (editingIndex !== null) copy[editingIndex] = newRow;
+      else copy.push(newRow);
       return copy;
     });
     setEditingIndex(null);
@@ -192,17 +194,23 @@ export default function OrderFormPage() {
     const r = rows[i];
     setEditingIndex(i);
     if (!companyId) {
-      // infer & lock the company only if blank (optional)
       const prodCompany = products.find((p) => p.id === r.product_id)?.company;
-      if (prodCompany) setCompanyId(String(prodCompany));
+      if (prodCompany) setCompanyId(String(prodCompany.id || prodCompany));
     }
     setProductId(String(r.product_id));
     setPartNo(r.part_no || "");
     setQty(String(r.qty || ""));
     setPrice(String(r.price || ""));
-    // stock display
     const st = stocks.find((s) => String(s.product?.id || s.product) === String(r.product_id));
     setCurrentStock(st?.current_stock_quantity || 0);
+  };
+
+  // 🔥 Added delete confirmation
+  const removeLine = (i) => {
+    const r = rows[i];
+    const confirmDelete = confirm(`Are you sure you want to remove ${r.product_name}?`);
+    if (!confirmDelete) return;
+    setRows((prev) => prev.filter((_, idx) => idx !== i));
   };
 
   const cancelLineEdit = () => {
@@ -210,22 +218,16 @@ export default function OrderFormPage() {
     clearControls();
   };
 
-  const removeLine = (i) => {
-    setRows((prev) => prev.filter((_, idx) => idx !== i));
-    if (editingIndex === i) cancelLineEdit();
-  };
+  const total = useMemo(() => rows.reduce((s, r) => s + r.price * r.qty, 0), [rows]);
 
-  const total = useMemo(() => rows.reduce((s, r) => s + Number(r.price) * Number(r.qty), 0), [rows]);
-
-  /* Submit: PUT replaces items list; POST creates */
   const submit = async () => {
     if (!rows.length) return alert("Add at least one line.");
     const payload = {
       order_date: orderDate,
       items: rows.map((r) => ({
         product_id: r.product_id,
-        quantity: Number(r.qty),
-        order_price: Number(r.price),
+        quantity: r.qty,
+        order_price: r.price,
       })),
     };
     try {
@@ -256,7 +258,7 @@ export default function OrderFormPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Order No:</Label>
-            <Input value={orderId ? `Editing #${orderId}` : "AUTO GENERATED"} readOnly />
+            <Input value={orderNo ? orderNo : orderId ? `Editing #${orderId}` : "AUTO GENERATED"} readOnly />
           </div>
           <div>
             <Label>Order Date: <span className="text-red-600">*</span></Label>
@@ -270,7 +272,7 @@ export default function OrderFormPage() {
       <Box>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
           <div className="md:col-span-4">
-            <Label>Company Name: <span className="text-red-600">*</span></Label>
+            <Label>Company Name:</Label>
             <div className="flex gap-2">
               <Select value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
                 <option value="">--Select--</option>
@@ -278,7 +280,7 @@ export default function OrderFormPage() {
                   <option key={c.id} value={c.id}>{c.company_name}</option>
                 ))}
               </Select>
-              <Button className="bg-emerald-400 text-white">Search</Button>
+              <Button className="bg-emerald-400 text-white hover:bg-emerald-500">Search</Button>
             </div>
           </div>
 
@@ -319,20 +321,20 @@ export default function OrderFormPage() {
 
           <div className="md:col-span-3 flex gap-2">
             <Button
-              className={(editingIndex !== null ? "bg-amber-500 text-white " : "bg-violet-600 text-white ") + "w-full"}
+              className={(editingIndex !== null ? "bg-amber-500 hover:bg-amber-600 text-white " : "bg-violet-600 hover:bg-violet-700 text-white ") + "w-full"}
               onClick={addOrSaveLine}
               disabled={!productId || !qty}
             >
               {editingIndex !== null ? "Save Line" : "Add"}
             </Button>
             {editingIndex !== null && (
-              <Button className="w-full" onClick={cancelLineEdit}>Cancel</Button>
+              <Button className="w-full hover:bg-gray-100" onClick={cancelLineEdit}>Cancel</Button>
             )}
           </div>
         </div>
       </Box>
 
-      {/* Table */}
+      {/* Product Table */}
       <h2 className="mt-6 mb-2 font-semibold">Product Details</h2>
       <div className="border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
@@ -353,22 +355,29 @@ export default function OrderFormPage() {
               <tr><td colSpan={8} className="p-3 text-center text-gray-500">No items added</td></tr>
             ) : (
               rows.map((r, i) => {
-                const sub = Number(r.price) * Number(r.qty);
+                const sub = r.price * r.qty;
                 return (
                   <tr key={`${r.product_id}-${i}`}>
                     <td className="border p-2 text-center">{i + 1}</td>
                     <td className="border p-2">{r.company_name}</td>
                     <td className="border p-2">{r.part_no}</td>
                     <td className="border p-2">{r.product_name}</td>
-                    <td className="border p-2 text-right">{Number(r.price).toFixed(2)}</td>
+                    <td className="border p-2 text-right">{r.price.toFixed(2)}</td>
                     <td className="border p-2 text-right">{r.qty}</td>
                     <td className="border p-2 text-right">{currency(sub)}</td>
-                    <td className="border p-2 text-center">
-                      <div className="inline-flex items-center">
-                        <button onClick={() => editLine(i)} className="text-emerald-600 hover:underline">Edit</button>
-                        <span className="inline-block w-px h-4 bg-gray-300 mx-3" />
-                        <button onClick={() => removeLine(i)} className="text-red-600 hover:underline">Remove</button>
-                      </div>
+                    <td className="border p-2 text-center space-x-2">
+                      <Button
+                        onClick={() => editLine(i)}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 cursor-pointer"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={() => removeLine(i)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 cursor-pointer"
+                      >
+                        Remove
+                      </Button>
                     </td>
                   </tr>
                 );
@@ -385,8 +394,9 @@ export default function OrderFormPage() {
         </table>
       </div>
 
+      {/* Footer */}
       <div className="mt-6 flex justify-end">
-        <Button className="bg-emerald-400 text-white" onClick={submit} disabled={saving || rows.length === 0}>
+        <Button className="bg-emerald-400 hover:bg-emerald-500 text-white" onClick={submit} disabled={saving || !rows.length}>
           {orderId ? (saving ? "Updating..." : "Update Order") : saving ? "Submitting..." : "Submit Order"}
         </Button>
       </div>
