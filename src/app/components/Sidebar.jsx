@@ -95,16 +95,16 @@ function SidebarContent() {
       label: "Borrower",
       icon: "⚙️",
       children: [
-        { label: "Add Borrower", href: "/borrower/add" },
-        { label: "Borrower List", href: "/borrower/list" }
+        { label: "Add Borrower", href: "/borrower/addBorrower" },
+        { label: "Borrower List", href: "/borrower/borrowerList" }
       ]
     },
     {
       label: "Owed",
       icon: "⚙️",
       children: [
-        { label: "Add Owed", href: "/owed/add" },
-        { label: "Owed List", href: "/owed/list" }
+        { label: "Add Owed", href: "/owe/addOwe" },
+        { label: "Owed List", href: "/owe/oweList" }
       ]
     },
     {
