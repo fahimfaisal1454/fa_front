@@ -128,9 +128,9 @@ function SidebarContent() {
       label: "Transaction",
       icon: "⚙️",
       children: [
-        { label: "Add PayReceipt", href: "/transaction/payreceipt" },
-        { label: "Daily Expenses", href: "/transaction/expenses" },
-        { label: "Add ReceivedReceipt", href: "/transaction/received" },
+        { label: "Add PayReceipt", href: "/transaction/addPay" },
+        { label: "Daily Expenses", href: "/transaction/expense-list" },
+        { label: "Add ReceivedReceipt", href: "/transaction/addRecieve" },
         { label: "Daily Income", href: "/transaction/income" },
         { label: "Cost Category Ledger Report", href: "/transaction/cost-ledger" },
         { label: "Sale Statement Report", href: "/transaction/sale-statement" },

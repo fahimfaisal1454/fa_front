@@ -11,44 +11,11 @@ import Navbar from "./Navbar";
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
-  const isLoginPage = pathname === "/authentication";
-  const isHonorboard = pathname === "/honorboard";
-  const isStudent = pathname === "/students";
-  const isAlumni = pathname === "/alumni";
-  const isTeachers = pathname === "/teachers";
-  const isResult = pathname === "/result";
-  const isPhotoGallery = pathname === "/photogallery";
-  const isNotice = pathname === "/noticeboard";
-  const isAbout = pathname === "/aboutcollege";
-  const isHistoricalPlace = pathname === "/historicalplace";
-  const isCollegeHistory = pathname === "/collegehistory";
-  const isOfficeOfPrincipal = pathname === "/officeofprincipal";
-  const isOfficeOfVicePrinciple = pathname === "/officeofVicePrinciple";
-  const isCollegeLocation = pathname === "/collegelocation";
-  const isFormalPrincipal = pathname === "/formarprincipal";
-  const isFormalVicePrincipal = pathname === "/formarviceprincipal";
-  const isNotableAlumni = pathname === "/notablealumni";
-  const isCitizenCharter = pathname === "/citizencharter";
-  const isFormerFaculty = pathname === "/formerfaculty";
+  const isBrandpage = pathname === "/brands"
+  
+  const user = typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
-  const user =
-    typeof window !== "undefined" ? localStorage.getItem("user") : null;
-
-  const isAuthenticated =
-    user !== null && user !== undefined && user !== "null";
-
-  if (isAuthenticated) {
-    if (isHonorboard || isStudent || isTeachers) {
-      return (
-        <div className="flex h-screen">
-          <SidebarContent />
-          <div className="flex-1 -10 overflow-y-auto">
-            {children}
-          </div>
-        </div>
-      );
-    }
-  }
+  const isAuthenticated = user !== null && user !== undefined && user !== "null";
 
   console.log("Authenticated:", isAuthenticated);
 
