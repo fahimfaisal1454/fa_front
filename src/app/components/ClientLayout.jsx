@@ -11,6 +11,7 @@ import Navbar from "./Navbar";
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
+  const isBrandpage = pathname === "/brands"
   const isLoginPage = pathname === "/authentication";
   const isHonorboard = pathname === "/honorboard";
   const isStudent = pathname === "/students";
@@ -54,25 +55,7 @@ export default function ClientLayout({ children }) {
 
   if (
     isHomePage ||
-    isHonorboard ||
-    isStudent ||
-    isTeachers ||
-    isResult ||
-    isNotice ||
-    isPhotoGallery ||
-    isAlumni ||
-    isAbout ||
-    isHistoricalPlace ||
-    isCollegeHistory ||
-    isOfficeOfPrincipal ||
-    isOfficeOfVicePrinciple ||
-    isCollegeLocation ||
-    isFormalPrincipal ||
-    isFormalVicePrincipal ||
-    isNotableAlumni ||
-    isCitizenCharter ||
-    isFormerFaculty
-    
+    isBrandpage
   ) {
     return (
       <>
