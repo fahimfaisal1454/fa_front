@@ -36,7 +36,7 @@ export default function BrandModelsPage() {
   const brandTitle = brand.toUpperCase();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-28 pb-12">
+    <div className="max-w-6xl mx-auto px-4 pt-6 pb-12">
       {/* breadcrumb */}
       <div className="text-sm text-gray-600 mb-4">
         <Link href="/brands" className="hover:underline">Brands</Link>

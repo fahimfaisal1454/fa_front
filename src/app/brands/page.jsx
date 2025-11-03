@@ -14,7 +14,7 @@ const BRANDS = [
 
 export default function BrandsPage() {
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-28 pb-12">
+    <div className="max-w-6xl mx-auto px-4 pt-6 pb-12">
       <h1 className="text-3xl font-bold mb-6">Find parts for your bike</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

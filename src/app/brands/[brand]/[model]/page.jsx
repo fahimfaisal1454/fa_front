@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 
 const PARTS = {
-  // keep a couple as demo; you can mirror the full list later
   glamour: [
     { sku: "CAM-ASM-GLA", name: "Cam Shaft Assembly" },
     { sku: "CARB-REP-GLA", name: "Carburetor Repair Kit" },
@@ -26,7 +25,7 @@ export default function PartsPage() {
   if (!parts) return notFound();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-28 pb-12">
+    <div className="max-w-6xl mx-auto px-4 pt-6 pb-12">
       {/* breadcrumb */}
       <div className="text-sm text-gray-600 mb-4">
         <Link href="/brands" className="hover:underline">Brands</Link>
@@ -44,7 +43,6 @@ export default function PartsPage() {
         {parts.map(p => (
           <div key={p.sku} className="bg-white border rounded-xl shadow p-4">
             <div className="h-24 bg-gray-100 rounded mb-3 flex items-center justify-center text-xs text-gray-500">
-              {/* placeholder image area */}
               Image
             </div>
             <div className="font-semibold text-sm">{p.name}</div>
