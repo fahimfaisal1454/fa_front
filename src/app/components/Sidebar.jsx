@@ -44,6 +44,14 @@ function SidebarContent() {
       ]
     },
     {
+  label: "Bike Models",
+  icon: "🏍️",
+  children: [
+    { label: "Add Bike Model", href: "/bike-models/add" },
+    { label: "Bike Model List", href: "/bike-models/list" },
+  ],
+},
+    {
       label: "Exporter",
       icon: "⚙️",
       children: [

@@ -8,6 +8,7 @@ export default function ProductEntryForm() {
   const [categoryList, setCategoryList] = useState([]);
   const [companyList, setCompanyList] = useState([]);
   const [filteredCategories, setFilteredCategories] = useState([]);
+  const [bikeModelList, setBikeModelList] = useState([]); // ✅ NEW: suggestions for Model No
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -31,6 +32,7 @@ export default function ProductEntryForm() {
     product_code: "",
   });
 
+  // ---------- data fetchers ----------
   const fetchCompanyNames = async () => {
     try {
       const response = await AxiosInstance.get("companies/");
@@ -46,6 +48,21 @@ export default function ProductEntryForm() {
       setCategoryList(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
+    }
+  };
+
+  const fetchBikeModels = async (companyId) => {
+    // ✅ NEW: load bike models by company for suggestions
+    if (!companyId) {
+      setBikeModelList([]);
+      return;
+    }
+    try {
+      const res = await AxiosInstance.get(`/bike-models/?company=${companyId}`);
+      setBikeModelList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching bike models:", error);
+      setBikeModelList([]);
     }
   };
 
@@ -79,19 +96,29 @@ export default function ProductEntryForm() {
         product_bdt: parsed.product_bdt || "",
         product_code: parsed.product_code || "AUTO GENERATE",
       });
+
+      // ✅ NEW: also load bike models for the product's company in edit mode
+      if (parsed.company) {
+        await fetchBikeModels(parsed.company);
+      }
     } catch (error) {
       console.error("Failed to fetch product for edit:", error);
     }
   };
 
+  // ---------- effects ----------
   useEffect(() => {
     if (formData.company) {
       const filtered = categoryList.filter(
         (cat) => cat.company_detail?.id === Number(formData.company)
       );
       setFilteredCategories(filtered);
+
+      // ✅ load models whenever company changes
+      fetchBikeModels(Number(formData.company));
     } else {
       setFilteredCategories([]);
+      setBikeModelList([]);
     }
   }, [formData.company, categoryList]);
 
@@ -104,6 +131,7 @@ export default function ProductEntryForm() {
     }
   }, [productId]);
 
+  // ---------- handlers ----------
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
@@ -139,6 +167,9 @@ export default function ProductEntryForm() {
         (cat) => cat.company_detail?.id === companyId
       );
       setFilteredCategories(filtered);
+
+      // ✅ also refresh bike models for the new company
+      fetchBikeModels(companyId);
     }
 
     setFormData((prev) => ({
@@ -188,6 +219,7 @@ export default function ProductEntryForm() {
           product_bdt: "",
         });
         setEditId(null);
+        setBikeModelList([]); // ✅ reset suggestions
       } else {
         alert("Something went wrong during submission.");
       }
@@ -235,9 +267,10 @@ export default function ProductEntryForm() {
     }
   };
 
+  // ---------- render ----------
   return (
     <div className="max-w-7xl mx-auto p-6 text-sm">
-      <h2 className="text-xl text-black  mb-4 pb-3 border-slate-400 border-b-[1px]">
+      <h2 className="text-xl text-black mb-4 pb-3 border-slate-400 border-b-[1px]">
         Products Entry
       </h2>
       <form className="space-y-2 text-black" onSubmit={handleSubmit}>
@@ -262,6 +295,7 @@ export default function ProductEntryForm() {
               ))}
             </select>
           </div>
+
           <div>
             <label className="block ">
               Product Category:<span className="text-red-500">*</span>
@@ -281,6 +315,7 @@ export default function ProductEntryForm() {
               ))}
             </select>
           </div>
+
           <div>
             <label className="block ">
               Product Name:<span className="text-red-600">*</span>
@@ -294,6 +329,7 @@ export default function ProductEntryForm() {
               onKeyDown={handleKeyDown}
             />
           </div>
+
           <div>
             <label className="block ">
               Part No:<span className="text-red-600">*</span>
@@ -307,6 +343,7 @@ export default function ProductEntryForm() {
               onKeyDown={handleKeyDown}
             />
           </div>
+
           <div>
             <label className="block ">Product Code</label>
             <input
@@ -327,6 +364,7 @@ export default function ProductEntryForm() {
               onKeyDown={handleKeyDown}
             />
           </div>
+
           <div>
             <label className="block ">Brand Name:</label>
             <input
@@ -338,17 +376,27 @@ export default function ProductEntryForm() {
               onKeyDown={handleKeyDown}
             />
           </div>
+
           <div>
             <label className="block ">Model No:</label>
+            {/* ✅ Autocomplete from Bike Models */}
             <input
               name="model_no"
               type="text"
+              list="bike-models-list"
               value={formData.model_no || ""}
               onChange={handleChange}
               className="w-full border rounded px-2 py-1"
               onKeyDown={handleKeyDown}
+              placeholder="Start typing (suggestions appear)…"
             />
+            <datalist id="bike-models-list">
+              {bikeModelList.map((m) => (
+                <option key={m.id} value={m.name} />
+              ))}
+            </datalist>
           </div>
+
           <div>
             <label className="block ">Net Weight:</label>
             <input
@@ -415,7 +463,6 @@ export default function ProductEntryForm() {
             <label className="block ">
               HS Code:<span className="text-red-600">*</span>
             </label>
-
             <input
               name="hs_code"
               type="text"
@@ -428,6 +475,7 @@ export default function ProductEntryForm() {
             />
           </div>
         </div>
+
         {/* Buttons */}
         {loading ? (
           <div className="flex items-center justify-center">
