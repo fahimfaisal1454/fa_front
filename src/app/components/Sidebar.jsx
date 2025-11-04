@@ -133,7 +133,7 @@ function SidebarContent() {
         { label: "Add ReceivedReceipt", href: "/transaction/addRecieve" },
         { label: "Daily Income", href: "/transaction/income" },
         { label: "Cost Category Ledger Report", href: "/transaction/cost-ledger" },
-        { label: "Sale Statement Report", href: "/transaction/sale-statement" },
+        { label: "Sale Statement Report", href: "/transaction/customerStatement" },
         { label: "Brand Wise Sale Statement Report", href: "/transaction/brand-sale" },
         { label: "Purchase Statement Report", href: "/transaction/purchase-statement" },
         { label: "Part No wise Purchase Statement Report", href: "/transaction/partwise" },
