@@ -286,104 +286,26 @@ export default function PaymentVoucherPage() {
     return words + " ONLY";
   };
 
-  if (!receiptData) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
-        <div style={{
-          animation: 'spin 1s linear infinite',
-          height: '2rem',
-          width: '2rem',
-          border: '4px solid #3b82f6',
-          borderTop: '4px solid transparent',
-          borderRadius: '50%'
-        }}></div>
-        <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading receipt data and generating PDF...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ 
-      padding: '24px', 
-      backgroundColor: '#f8f9fa', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      minHeight: '100vh',
-      justifyContent: 'center'
-    }}>
-      {/* Success Message */}
-      <div style={{
-        backgroundColor: 'white',
-        width: '100%',
-        maxWidth: '500px',
-        margin: '0 auto',
-        border: '1px solid #d1fae5',
-        padding: '32px',
-        fontSize: '16px',
-        lineHeight: '1.5',
-        fontFamily: 'Arial, sans-serif',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        borderRadius: '12px',
-        textAlign: 'center'
-      }}>
-        <div style={{ 
-          fontSize: '48px', 
-          marginBottom: '16px',
-          color: '#10b981'
-        }}>
-          ✅
-        </div>
-        
-        <h1 style={{ 
-          fontSize: '24px', 
-          fontWeight: 'bold', 
-          margin: '0 0 16px 0', 
-          color: '#065f46' 
-        }}>
-          PDF Generated Successfully!
-        </h1>
-        
-        <p style={{ 
-          fontSize: '16px', 
-          color: '#374151',
-          marginBottom: '24px'
-        }}>
-          The receipt PDF has been automatically opened in a new tab.
-        </p>
-
-        <div style={{
-          backgroundColor: '#f0fdf4',
-          padding: '16px',
-          borderRadius: '8px',
-          border: '1px solid #bbf7d0',
-          textAlign: 'left',
-          marginBottom: '24px'
-        }}>
-          <p style={{ margin: '8px 0', fontWeight: '600' }}>Receipt Details:</p>
-          <p style={{ margin: '4px 0' }}><strong>Voucher No:</strong> {receiptData.voucherNo}</p>
-          <p style={{ margin: '4px 0' }}><strong>Account Title:</strong> {receiptData.accountTitle}</p>
-          <p style={{ margin: '4px 0' }}><strong>Amount:</strong> {parseFloat(receiptData.amount || 0).toLocaleString('en-IN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })}</p>
-        </div>
-
-        <p style={{ 
-          fontSize: '14px', 
-          color: '#6b7280',
-          fontStyle: 'italic'
-        }}>
-          If the PDF didn't open automatically, check your browser's pop-up settings.
-        </p>
-      </div>
-    </div>
-  );
+//   // Show only loading state, then auto-open PDF
+//   return (
+//     <div style={{ 
+//       display: 'flex', 
+//       justifyContent: 'center', 
+//       alignItems: 'center', 
+//       height: '100vh',
+//       flexDirection: 'column',
+//       gap: '16px',
+//       backgroundColor: '#f8f9fa'
+//     }}>
+//       <div style={{
+//         animation: 'spin 1s linear infinite',
+//         height: '2rem',
+//         width: '2rem',
+//         border: '4px solid #3b82f6',
+//         borderTop: '4px solid transparent',
+//         borderRadius: '50%'
+//       }}></div>
+//       <p style={{ color: '#6b7280', fontSize: '16px' }}>Generating PDF voucher...</p>
+//     </div>
+//   );
 }

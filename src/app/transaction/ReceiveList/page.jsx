@@ -4,6 +4,7 @@ import AxiosInstance from "@/app/components/AxiosInstance";
 import { toast } from "react-hot-toast";
 import { FaFilePdf, FaSearch } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { generateReceiptPDF } from "./ReceiveReceipt";
 
 
 const IncomePage = () => {
@@ -42,9 +43,18 @@ const IncomePage = () => {
   }, []);
 
 
-  const handleVoucher = (id) => {
-    router.push(`/transaction/ReceiveList/${id}`);
+
+   // ✅ Generate and open PDF in new tab
+  const handleVoucher = async (income) => {
+    try {
+      await generateReceiptPDF(income);
+      toast.success('PDF voucher generated successfully!');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Failed to generate PDF voucher');
+    }
   };
+
 
   
   // ✅ Apply filters
@@ -183,7 +193,7 @@ const IncomePage = () => {
                   <td className="border px-2 py-1">{income.remarks || "-"}</td>
                   <td className="border px-2 py-1">
                     <button 
-                        onClick={() => handleVoucher(income.id)} 
+                        onClick={() => handleVoucher(income)} 
                         className="bg-blue-500 px-1 py-1 rounded text-white hover:bg-blue-600 cursor-pointer">
                         Voucher
                     </button>
