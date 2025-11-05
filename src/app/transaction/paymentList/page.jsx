@@ -175,7 +175,7 @@ const ExpensePage = () => {
                     >
                     Voucher
                     </button>
-                </td>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -191,20 +191,23 @@ const ExpensePage = () => {
 
      {/* Render PayReceipt if selected */}
       {selectedReceipt && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <PayReceipt receiptData={selectedReceipt} />
-            <button
-              onClick={() => setSelectedReceipt(null)}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-            >
-              Close
-            </button>
-          </div>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-semibold">Receipt Details</h3>
+                <button
+                onClick={() => setSelectedReceipt(null)}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                Close
+                </button>
+            </div>
+            <div className="p-4">
+                <PaymentVoucherPage receiptData={selectedReceipt} />
+            </div>
+            </div>
         </div>
-      )}
-
-
+        )}
     </div>
   );
 };

@@ -36,8 +36,9 @@ export default function PayReceipt({ receiptData }) {
     <div className="p-6 bg-gray-100 min-h-screen flex flex-col items-center">
       {/* Printable Section */}
       <div
-        id="pay-receipt"
-        className="bg-white w-full max-w-4xl border border-gray-400 p-6 shadow-md text-sm leading-relaxed"
+        id="receive-receipt"
+        className="bg-white w-full max-w-2xl mx-auto border border-gray-400 p-6 text-sm leading-relaxed"
+        style={{ minWidth: '600px' }} // Force minimum width
       >
         {/* Header */}
         <div className="text-center border-b border-gray-400 pb-2 mb-3">

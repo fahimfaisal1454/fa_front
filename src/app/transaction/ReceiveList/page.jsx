@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 import AxiosInstance from "@/app/components/AxiosInstance";
 import { toast } from "react-hot-toast";
 import { FaFilePdf, FaSearch } from "react-icons/fa";
-import ReceiveReceipt from "./ReceiveReceipt";
+import { useRouter } from "next/navigation";
 
 
 const IncomePage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     category: "",
     amount: "",
@@ -24,6 +25,7 @@ const IncomePage = () => {
 
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [incomes, setIncomes] = useState([]);
+  
 
   // ✅ Fetch all Incomes
   const fetchIncomes = async (params = {}) => {
@@ -39,23 +41,12 @@ const IncomePage = () => {
     fetchIncomes();
   }, []);
 
-  const handleDownloadPDF = async (expense) => {
-    setSelectedExpense(expense);
-    setTimeout(async () => {
-        const html2pdf = (await import("html2pdf.js")).default;
-        const element = document.getElementById("voucher-form");
-        const opt = {
-        margin: 0.5,
-        filename: `${expense.receiptNo || "pay_receipt"}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
-        };
-        html2pdf().from(element).set(opt).save();
-    }, 300);
+
+  const handleVoucher = (id) => {
+    router.push(`/transaction/ReceiveList/${id}`);
   };
 
-
+  
   // ✅ Apply filters
   const handleSearch = (e) => {
     e.preventDefault();
@@ -191,13 +182,13 @@ const IncomePage = () => {
                   </td>
                   <td className="border px-2 py-1">{income.remarks || "-"}</td>
                   <td className="border px-2 py-1">
-                    <button
-                    onClick={() => setSelectedReceipt(income)}
-                    className="text-blue-600 hover:underline cursor-pointer"
-                    >
-                    Voucher
+                    <button 
+                        onClick={() => handleVoucher(income.id)} 
+                        className="bg-blue-500 px-1 py-1 rounded text-white hover:bg-blue-600 cursor-pointer">
+                        Voucher
                     </button>
                   </td>
+                   
                 </tr>
               ))
             ) : (
@@ -211,20 +202,6 @@ const IncomePage = () => {
         </table>
       </div>
 
-        {/* Render PayReceipt if selected */}
-        {selectedReceipt && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-                <ReceiveReceipt receiptData={selectedReceipt} />
-                <button
-                onClick={() => setSelectedReceipt(null)}
-                className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-                >
-                Close
-                </button>
-            </div>
-            </div>
-        )}
     </div>
   );
 };
