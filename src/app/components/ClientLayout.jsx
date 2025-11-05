@@ -4,7 +4,6 @@ import React from "react";
 import SidebarContent from "./Sidebar";
 import ProtectedRoute from "../provider/ProtectedRoute";
 import { usePathname } from "next/navigation";
-
 import Footer from "./Footer";
 import Navbar from "./Navbar";
 
