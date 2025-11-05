@@ -4,10 +4,10 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="text-white text-xs">
-      {/* Main dark section */}
-      <div className="bg-[#1a0000]">
-        <div className="mx-auto max-w-7xl px-4 py-6">
+    <footer className="flex flex-col min-h-[200px] text-white text-xs">
+      {/* Main footer section */}
+      <div className="bg-[#1a0000] flex-grow">
+        <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Brand */}
             <div className="space-y-2">
@@ -83,7 +83,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom red bar */}
+      {/* Bottom bar */}
       <div className="bg-red-700 text-center py-3 font-semibold">
         <p>
           © {year} <span className="font-bold">Firoz Autos</span>. All rights
