@@ -1,8 +1,8 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import AxiosInstance from "@/app/components/AxiosInstance";
-
+import { handleDownloadPDF } from "./brandReceipt";
 
 export default function BrandSaleReport() {
   const [companies, setCompanies] = useState([]);
@@ -14,7 +14,7 @@ export default function BrandSaleReport() {
   const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch companies & customers on mount
+  // Fetch filters (companies + customers)
   useEffect(() => {
     const fetchFilters = async () => {
       try {
@@ -24,8 +24,6 @@ export default function BrandSaleReport() {
         ]);
         setCompanies(companyRes.data);
         setCustomers(customerRes.data);
-        setCompany(companyRes.data[0]?.name || ""); // default first company
-        setCustomer(customerRes.data[0]?.name || ""); // default first customer
       } catch (err) {
         console.error("Error fetching filter data:", err);
       }
@@ -33,13 +31,19 @@ export default function BrandSaleReport() {
     fetchFilters();
   }, []);
 
-  // Fetch sales data based on selected filters
+  // Fetch sales
   const fetchSalesData = async () => {
+    if (!fromDate || !company) {
+      toast.error("Please select a Company and From Date");
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await AxiosInstance.get("/brand-sale-report/", {
+      const res = await AxiosInstance.get("sales/", {
         params: { company, customer, from_date: fromDate, to_date: toDate },
       });
+      console.log("SalesData", res.data);
       setSalesData(res.data);
     } catch (err) {
       console.error("Error fetching sales data:", err);
@@ -49,10 +53,6 @@ export default function BrandSaleReport() {
     }
   };
 
-  useEffect(() => {
-    if (company && customer) fetchSalesData(); // fetch initially after filter lists load
-  }, [company, customer]);
-
   const handleSearch = (e) => {
     e.preventDefault();
     fetchSalesData();
@@ -60,21 +60,32 @@ export default function BrandSaleReport() {
 
   const handleDownload = () => {
     alert("Download Excel clicked");
-    // implement Excel download logic here
   };
 
   const handlePrint = () => {
     window.print();
   };
 
-  const totalAmount = salesData.reduce((acc, item) => acc + item.amount, 0);
+  // Calculate total from nested products
+  const totalAmount = salesData.reduce((acc, sale) => {
+    const subtotal = sale.products.reduce(
+      (sum, p) => sum + parseFloat(p.total_price || 0),
+      0
+    );
+    return acc + subtotal;
+  }, 0);
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-xl font-semibold mb-4">Brand Wise Sale Statement Report</h1>
+      <h1 className="text-xl font-semibold mb-4">
+        Brand Wise Sale Statement Report
+      </h1>
 
       {/* Filter Form */}
-      <form className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-4" onSubmit={handleSearch}>
+      <form
+        className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-4"
+        onSubmit={handleSearch}
+      >
         <div>
           <label className="block font-medium mb-1">Company Name: *</label>
           <select
@@ -82,8 +93,11 @@ export default function BrandSaleReport() {
             onChange={(e) => setCompany(e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1"
           >
+            <option value="">--Select--</option>
             {companies.map((c) => (
-              <option key={c.id} value={c.company_name}>{c.company_name}</option>
+              <option key={c.id} value={c.company_name}>
+                {c.company_name}
+              </option>
             ))}
           </select>
         </div>
@@ -95,8 +109,11 @@ export default function BrandSaleReport() {
             onChange={(e) => setCustomer(e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1"
           >
+            <option value="">--Select--</option>
             {customers.map((c) => (
-              <option key={c.id} value={c.customer_name}>{c.customer_name}</option>
+              <option key={c.id} value={c.id}>
+                {c.customer_name}
+              </option>
             ))}
           </select>
         </div>
@@ -154,6 +171,40 @@ export default function BrandSaleReport() {
         ) : salesData.length === 0 ? (
           <p className="text-center py-4">No data found for selected filters.</p>
         ) : (
+
+        <div>
+          <div className="flex justify-end mb-3">
+              <button
+              onClick={() => handleDownloadPDF(salesData,fromDate,toDate,customer,company,totalAmount,toast)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+              >
+              Download PDF
+              </button>
+          </div>
+
+          <div className="text-center border-b border-gray-400 pb-3 mb-6">
+              <h1 className="text-2xl font-bold uppercase tracking-wide text-gray-800">
+              Heaven Autos
+              </h1>
+              <p className="text-sm text-gray-700">
+              Genuine Motorcycle Parts Importer & Wholesaler
+              </p>
+              <p className="text-sm text-gray-600">
+              77 R.N. Road, Noldanga Road (Heaven Building), Jashore-7400 <br />
+              Phone: 0421-66095, Mob: 01924-331354 | Email: heavenautos77jsr@yahoo.com
+              </p>
+          </div>
+
+          <div className="mb-4 text-sm text-gray-700">
+            <p>
+              <strong>Date:</strong> From {fromDate || "—"} To{" "}
+              {toDate || "—"}
+            </p>
+            <p>
+              <strong>Company Name:</strong> {company || "—"}
+            </p>
+          </div>
+
           <table className="w-full border border-gray-300">
             <thead className="bg-gray-100">
               <tr>
@@ -167,23 +218,60 @@ export default function BrandSaleReport() {
               </tr>
             </thead>
             <tbody>
-              {salesData.map((item, idx) => (
-                <tr key={idx} className="text-center">
-                  <td className="border px-2 py-1">{item.date}</td>
-                  <td className="border px-2 py-1">{item.invoice}</td>
-                  <td className="border px-2 py-1">{item.partNo}</td>
-                  <td className="border px-2 py-1">{item.product}</td>
-                  <td className="border px-2 py-1">{item.customer}</td>
-                  <td className="border px-2 py-1">{item.qty.toFixed(2)}</td>
-                  <td className="border px-2 py-1">{item.amount.toFixed(2)}</td>
-                </tr>
+              {salesData.map((sale, saleIdx) => (
+                <React.Fragment key={saleIdx}>
+                  {sale.products.map((product, prodIdx) => (
+                    <tr key={prodIdx} className="text-center">
+                      {/* Show date and invoice only once per sale */}
+                      {prodIdx === 0 && (
+                        <>
+                          <td
+                            className="border px-2 py-1"
+                            rowSpan={sale.products.length}
+                          >
+                            {new Date(sale.sale_date).toLocaleDateString()}
+                          </td>
+                          <td
+                            className="border px-2 py-1"
+                            rowSpan={sale.products.length}
+                          >
+                            {sale.invoice_no}
+                          </td>
+                        </>
+                      )}
+
+                      <td className="border px-2 py-1">
+                        {product.part_no || ""}
+                      </td>
+                      <td className="border px-2 py-1">
+                        {product.product?.product_name || ""}
+                      </td>
+                      <td className="border px-2 py-1">
+                        {sale.customer?.customer_name || ""}
+                      </td>
+                      <td className="border px-2 py-1">
+                        {parseFloat(product.sale_quantity || 0).toFixed(2)}
+                      </td>
+                      <td className="border px-2 py-1  text-right">
+                        {parseFloat(product.total_price || 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
-              <tr className="font-bold text-right">
-                <td colSpan="6" className="border px-2 py-1 text-right">Total:</td>
-                <td className="border px-2 py-1">{totalAmount.toFixed(2)}</td>
+
+              {/* Grand Total */}
+              <tr className="font-bold bg-gray-100 text-right">
+                <td colSpan="6" className="border px-2 py-1 text-right">
+                  Total:
+                </td>
+                <td className="border px-2 py-1 text-right">
+                  {totalAmount.toFixed(2)}
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
         )}
       </div>
     </div>
