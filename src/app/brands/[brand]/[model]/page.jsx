@@ -13,7 +13,7 @@ export default function PartsForModelPage() {
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
   const [bikeModel, setBikeModel] = useState(null);
-  const [parts, setParts] = useState([]);
+  const [parts, setParts] = useState([]); // each part will be { ...product, _stock }
   const [error, setError] = useState(null);
 
   // Build absolute /media URLs
@@ -27,19 +27,44 @@ export default function PartsForModelPage() {
     return `${apiBase}${src.startsWith("/") ? "" : "/"}${src}`;
   };
 
-  // Small helper to show a price if your API uses different field names
-  const formatPrice = (p) => {
-    const val =
-      typeof p?.price === "number" ? p.price :
-      typeof p?.selling_price === "number" ? p.selling_price :
-      typeof p?.mrp === "number" ? p.mrp :
-      null;
-    if (val == null) return null;
-    try {
-      return `৳ ${Number(val).toFixed(2)}`;
-    } catch {
-      return `৳ ${val}`;
+  // Helpers — figure out stock availability & price robustly
+  const isInStock = (s) => {
+    if (!s) return false;
+    const candidates = [
+      s.available_qty,
+      s.available_quantity,
+      s.quantity,
+      s.qty,
+      s.stock_qty,
+      s.current_stock,
+      s.stock, // catch-all
+    ].filter((v) => typeof v !== "undefined" && v !== null);
+
+    if (candidates.length === 0) {
+      // If quantity fields aren't exposed, treat sale_price presence as "in stock"
+      return !!s.sale_price;
     }
+    return candidates.some((n) => Number(n) > 0);
+  };
+
+  const getDisplayPrice = (product) => {
+    // Prefer stock sale price; otherwise fall back to product prices
+    const s = product?._stock;
+    const pick = (obj, keys) => {
+      for (const k of keys) {
+        if (obj && obj[k] != null && obj[k] !== "") return obj[k];
+      }
+      return null;
+    };
+
+    const val =
+      pick(s, ["sale_price"]) ??
+      pick(product, ["product_bdt", "product_mrp", "price", "mrp", "selling_price", "sale_price"]);
+
+    if (val == null) return null;
+
+    const num = parseFloat(val);
+    return Number.isNaN(num) ? `৳ ${val}` : `৳ ${num.toFixed(2)}`;
   };
 
   useEffect(() => {
@@ -71,20 +96,39 @@ export default function PartsForModelPage() {
 
         const modelName = modelRes?.data?.name || "";
 
-        // 2) primary: by FK
+        // 2) products (primary by FK)
         const fkUrl = `/products/?company=${brandId}&bike_model=${modelId}`;
         const fkRes = await AxiosInstance.get(fkUrl);
         let fetched = Array.isArray(fkRes.data) ? fkRes.data : [];
 
-        // 3) fallback: by model_no text
+        // 3) fallback by model name if nothing found
         if (fetched.length === 0 && modelName) {
           const txtUrl = `/products/?company=${brandId}&model_no=${encodeURIComponent(modelName)}`;
           const txtRes = await AxiosInstance.get(txtUrl);
           fetched = Array.isArray(txtRes.data) ? txtRes.data : [];
         }
 
+        // 4) fetch stock for each product to pick sale_price & availability
+        // (If your /stocks endpoint supports product__in, switch to one batched request.)
+        const withStock = await Promise.all(
+          fetched.map(async (prod) => {
+            try {
+              // try to narrow by both product and part_no
+              const qs =
+                prod?.part_no
+                  ? `/stocks/?product=${prod.id}&part_no=${encodeURIComponent(prod.part_no)}`
+                  : `/stocks/?product=${prod.id}`;
+              const res = await AxiosInstance.get(qs);
+              const stock = Array.isArray(res.data) ? res.data[0] : null;
+              return { ...prod, _stock: stock || null };
+            } catch {
+              return { ...prod, _stock: null };
+            }
+          })
+        );
+
         if (!alive) return;
-        setParts(fetched);
+        setParts(withStock);
       } catch (err) {
         console.error("Fetch parts error:", err);
         if (!alive) return;
@@ -97,7 +141,9 @@ export default function PartsForModelPage() {
       }
     })();
 
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [brand, model]);
 
   if (!loading && (!company || !bikeModel)) return notFound();
@@ -112,7 +158,9 @@ export default function PartsForModelPage() {
           <Link href={`/brands/${brand}`} className="hover:underline">
             {company.company_name}
           </Link>
-        ) : <span>Brand</span>}
+        ) : (
+          <span>Brand</span>
+        )}
         <span className="mx-2">›</span>
         <span className="font-semibold">{bikeModel?.name || "Model"}</span>
       </div>
@@ -122,9 +170,12 @@ export default function PartsForModelPage() {
       </h1>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-40 rounded-xl border bg-white shadow animate-pulse" />
+            <div
+              key={i}
+              className="aspect-square rounded-2xl border bg-gray-100 shadow animate-pulse"
+            />
           ))}
         </div>
       ) : error ? (
@@ -132,46 +183,73 @@ export default function PartsForModelPage() {
       ) : parts.length === 0 ? (
         <div className="text-gray-600">No parts found for this model.</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 place-items-center">
           {parts.map((p) => {
-            const priceText = formatPrice(p);
+            const stockOK = isInStock(p?._stock);
+            const priceText = getDisplayPrice(p);
+
             return (
-              <div key={p.id} className="bg-white border rounded-xl shadow p-4 flex flex-col">
-                <div className="h-28 bg-gray-100 rounded mb-3 flex items-center justify-center">
+              <div
+                key={p.id}
+                className="bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-lg transition p-4 flex flex-col items-stretch justify-between w-56 aspect-square"
+              >
+                {/* Image */}
+                <div className="relative flex items-center justify-center flex-1 w-full">
+                  {!stockOK && (
+                    <span className="absolute top-0 right-0 mt-1 mr-1 text-[10px] px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                      Out of stock
+                    </span>
+                  )}
                   {p.image ? (
                     <img
                       src={toImg(p.image)}
                       alt={p.product_name || "Part"}
-                      className="h-28 w-auto object-contain"
+                      className="max-h-36 max-w-[95%] object-contain"
                       loading="lazy"
                     />
                   ) : (
-                    <span className="text-xs text-gray-500">No Image</span>
+                    <div className="h-24 w-24 rounded-full bg-gray-100 grid place-items-center text-xs text-gray-500">
+                      No Image
+                    </div>
                   )}
                 </div>
 
-                <div className="font-semibold text-sm line-clamp-2">
-                  {p.product_name || "Part"}
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  {p.part_no ? `SKU: ${p.part_no}` :
-                   p.product_code ? `Code: ${p.product_code}` : ""}
-                </div>
-
-                {priceText && (
-                  <div className="mt-1 text-sm font-semibold text-gray-900">
-                    {priceText}
+                {/* Info */}
+                <div className="mt-3">
+                  <div className="font-semibold text-sm line-clamp-2 text-gray-900 text-center">
+                    {p.product_name || "Part"}
                   </div>
-                )}
 
-                {/* one button that takes users to product details where they can add to cart */}
-                <Link
-                  href={`/brands/${brand}/${model}/products/${p.id}`}
-                  className="mt-3 w-full text-center bg-blue-600 text-white text-sm py-1.5 rounded hover:bg-blue-700"
-                >
-                  View / Add to Cart
-                </Link>
+                  {(p.part_no || p.product_code) && (
+                    <div className="text-xs text-gray-500 text-center mt-0.5">
+                      {p.part_no
+                        ? `SKU: ${p.part_no}`
+                        : p.product_code
+                        ? `Code: ${p.product_code}`
+                        : ""}
+                    </div>
+                  )}
+
+                  {priceText && (
+                    <div className="mt-1 text-sm font-semibold text-gray-900 text-center">
+                      {priceText}
+                    </div>
+                  )}
+
+                  {/* CTA */}
+                  <Link
+                    href={`/brands/${brand}/${model}/products/${p.id}`}
+                    className={`mt-3 w-full block text-center text-sm py-1.5 rounded ${
+                      stockOK
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    }`}
+                    aria-disabled={!stockOK}
+                    tabIndex={stockOK ? 0 : -1}
+                  >
+                    {stockOK ? "View / Add to Cart" : "View Details"}
+                  </Link>
+                </div>
               </div>
             );
           })}

@@ -12,10 +12,12 @@ export default function CompanyPage() {
     email: "",
     address: "",
     country: "",
+    image: null, // NEW
   });
 
   const [companies, setCompanies] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [preview, setPreview] = useState(null); // NEW
 
   // Fetch all companies
   const fetchCompanies = async () => {
@@ -32,16 +34,33 @@ export default function CompanyPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Create or update company
+  // NEW: handle file input + preview
+  const handleFile = (e) => {
+    const file = e.target.files?.[0] || null;
+    setFormData((f) => ({ ...f, image: file }));
+    setPreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  // Create or update company (now supports multipart for image)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      // Build FormData for multipart upload
+      const data = new FormData();
+      Object.entries(formData).forEach(([k, v]) => {
+        if (v !== null && v !== "") data.append(k, v);
+      });
+
       if (editingId) {
-        await AxiosInstance.put(`/companies/${editingId}/`, formData);
+        await AxiosInstance.put(`/companies/${editingId}/`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         alert("Updated successfully!");
       } else {
-        await AxiosInstance.post("/companies/", formData);
+        await AxiosInstance.post("/companies/", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         alert("Saved successfully!");
       }
 
@@ -52,7 +71,9 @@ export default function CompanyPage() {
         email: "",
         address: "",
         country: "",
+        image: null,
       });
+      setPreview(null);
       setEditingId(null);
       fetchCompanies();
     } catch (error) {
@@ -68,7 +89,6 @@ export default function CompanyPage() {
     try {
       await AxiosInstance.delete(`/companies/${id}/`);
       fetchCompanies();
-      
     } catch (err) {
       console.error("Delete failed:", err);
       alert("Delete failed.");
@@ -77,13 +97,24 @@ export default function CompanyPage() {
 
   // ✅ Fill form for editing
   const handleEdit = (company) => {
-    setFormData(company);
+    // Only copy relevant fields (avoid copying id or extra keys)
+    setFormData({
+      company_name: company.company_name || "",
+      incharge_name: company.incharge_name || "",
+      phone_no: company.phone_no || "",
+      email: company.email || "",
+      address: company.address || "",
+      country: company.country || "",
+      image: null, // keep null so we don't accidentally send the URL string as a file
+    });
+    // Show current image (if any) in preview; backend may return absolute or /media path
+    setPreview(company.image || null);
     setEditingId(company.id);
   };
 
   // Delete company
 
-    const handleKeyDown = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key !== "Enter") return;
 
     // Skip if react-select menu is open
@@ -125,106 +156,128 @@ export default function CompanyPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit}>
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-    <div>
-      <label className="block text-sm font-semibold mb-1">
-        Company Name:<span className="text-red-600">*</span>
-      </label>
-      <input
-        type="text"
-        name="company_name"
-        value={formData.company_name}
-        onChange={handleChange}
-        required
-        className="border rounded-sm p-1 w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold mb-1">
-        Incharge Name:<span className="text-red-600">*</span>
-      </label>
-      <input
-        type="text"
-        name="incharge_name"
-        value={formData.incharge_name}
-        onChange={handleChange}
-        required
-        className="border rounded-sm p-1 w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold mb-1">
-        Phone No:<span className="text-red-600">*</span>
-      </label>
-      <input
-        type="text"
-        name="phone_no"
-        value={formData.phone_no}
-        onChange={handleChange}
-        required
-        className="border rounded-sm p-1 w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold mb-1">
-        E-mail ID:<span className="text-red-600">*</span>
-      </label>
-      <input
-        type="email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        required
-        className="border rounded-sm p-1 w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Company Name:<span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="company_name"
+              value={formData.company_name}
+              onChange={handleChange}
+              required
+              className="border rounded-sm p-1 w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Incharge Name:<span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="incharge_name"
+              value={formData.incharge_name}
+              onChange={handleChange}
+              required
+              className="border rounded-sm p-1 w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              Phone No:<span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="phone_no"
+              value={formData.phone_no}
+              onChange={handleChange}
+              required
+              className="border rounded-sm p-1 w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              E-mail ID:<span className="text-red-600">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="border rounded-sm p-1 w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-    <div>
-      <label className="block text-sm font-semibold">
-        Address:<span className="text-red-600">*</span>
-      </label>
-      <textarea
-        name="address"
-        value={formData.address}
-        rows={1}
-        onChange={handleChange}
-        required
-        className="border rounded-sm px-2 py-[3px]  w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold ">
-        Country:<span className="text-red-600">*</span>
-      </label>
-      <input
-        type="text"
-        name="country"
-        value={formData.country}
-        onChange={handleChange}
-        required
-        className="border rounded-sm p-1 w-full"
-        onKeyDown={handleKeyDown}
-      />
-    </div>
+          <div>
+            <label className="block text-sm font-semibold">
+              Address:<span className="text-red-600">*</span>
+            </label>
+            <textarea
+              name="address"
+              value={formData.address}
+              rows={1}
+              onChange={handleChange}
+              required
+              className="border rounded-sm px-2 py-[3px]  w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold ">
+              Country:<span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              required
+              className="border rounded-sm p-1 w-full"
+              onKeyDown={handleKeyDown}
+            />
+          </div>
 
-    {/* Button */}
-    <div className="col-span-1 flex self-end">
-      <button
-        type="submit"
-        onKeyDown={handleKeyDown}
-        className="bg-blue-950 hover:bg-blue-700 text-white px-2 py-[6px] rounded-md w-1/3 cursor-pointer"
-      >
-        {editingId ? "Update" : "Save"}
-      </button>
-    </div>
-  </div>
-</form>
+          {/* NEW: Brand Logo upload */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold mb-1">
+              Brand Logo
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFile}
+              className="w-full"
+              onKeyDown={handleKeyDown}
+            />
+            {preview && (
+              <div className="mt-2">
+                <img
+                  src={preview}
+                  alt="Logo preview"
+                  className="h-14 rounded border"
+                />
+              </div>
+            )}
+          </div>
 
+          {/* Button */}
+          <div className="col-span-1 flex self-end">
+            <button
+              type="submit"
+              onKeyDown={handleKeyDown}
+              className="bg-blue-950 hover:bg-blue-700 text-white px-2 py-[6px] rounded-md w-1/3 cursor-pointer"
+            >
+              {editingId ? "Update" : "Save"}
+            </button>
+          </div>
+        </div>
+      </form>
 
       {/* Table */}
       <div className="mt-8 overflow-x-auto">
@@ -232,6 +285,7 @@ export default function CompanyPage() {
           <thead className="bg-sky-900 text-white">
             <tr>
               <th className="border border-gray-400 px-2 py-1">SL</th>
+              <th className="border border-gray-400 px-2 py-1">Logo</th>
               <th className="border border-gray-400 px-2 py-1">Company Name</th>
               <th className="border border-gray-400 px-2 py-1">Incharge Name</th>
               <th className="border border-gray-400 px-2 py-1">Phone No</th>
@@ -246,6 +300,19 @@ export default function CompanyPage() {
             {companies.map((c, index) => (
               <tr key={c.id} className="text-center">
                 <td className="border border-gray-400 px-2 py-1">{index + 1}</td>
+                <td className="border border-gray-400 px-2 py-1">
+                  {c.image ? (
+                    <img
+                      src={c.image}
+                      alt={c.company_name}
+                      className="h-8 w-auto mx-auto rounded"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded bg-gray-200 mx-auto grid place-items-center">
+                      {c.company_name?.[0]}
+                    </div>
+                  )}
+                </td>
                 <td className="border border-gray-400 px-2 py-1">
                   {c.company_name}
                 </td>

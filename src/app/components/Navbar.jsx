@@ -14,12 +14,16 @@ import { MdHeadsetMic } from "react-icons/md";
 import { IoIosArrowDown } from "react-icons/io";
 import logo from "../assets/Feroz.png";
 import { useUser } from "../provider/UserProvider";
+import Link from "next/link"; // ✅ added
+import { useCart } from "@/app/context/CartContext"; // ✅ added
 
 const Navbar = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { signOut } = useUser();
+  const { cart } = useCart(); // ✅ get cart from context
+  const cartCount = cart.reduce((sum, item) => sum + item.qty, 0); // ✅ count total qty
 
   const user =
     typeof window !== "undefined" ? localStorage.getItem("user") : null;
@@ -155,13 +159,16 @@ const Navbar = () => {
           </a>
         )}
 
-        <div className="relative text-center text-xs">
+        {/* ✅ Cart (now live count + clickable) */}
+        <Link href="/cart" className="relative text-center text-xs">
           <FaShoppingCart className="mx-auto text-xl" />
-          <span className="absolute -top-2 -right-2 text-[10px] bg-red-600 text-white rounded-full h-4 w-4 flex items-center justify-center">
-            0
-          </span>
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 text-[10px] bg-red-600 text-white rounded-full h-4 w-4 flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
           <div>Cart</div>
-        </div>
+        </Link>
       </div>
 
       {/* Mobile Menu */}
@@ -194,6 +201,7 @@ const Navbar = () => {
           >
             Contact Us
           </a>
+
           {isAuthenticated ? (
             <>
               <a
@@ -217,6 +225,16 @@ const Navbar = () => {
               Login or Register
             </a>
           )}
+
+          {/* ✅ Cart for mobile */}
+          <Link
+            href="/cart"
+            className="flex items-center gap-2 mt-2 text-gray-700"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <FaShoppingCart />
+            <span>Cart ({cartCount})</span>
+          </Link>
         </div>
       )}
     </div>

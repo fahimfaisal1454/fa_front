@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, notFound } from "next/navigation";
 import AxiosInstance from "@/app/components/AxiosInstance";
@@ -9,6 +9,17 @@ export default function BrandModelsPage() {
   const [models, setModels] = useState([]);
   const [brandInfo, setBrandInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Base URL for API media
+  const apiBase = useMemo(() => {
+    const base = AxiosInstance.defaults.baseURL || "";
+    return base.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+  }, []);
+
+  const toImg = (src) =>
+    !src ? null : /^https?:\/\//i.test(src)
+      ? src
+      : `${apiBase}${src.startsWith("/") ? "" : "/"}${src}`;
 
   useEffect(() => {
     if (!brand) return;
@@ -32,40 +43,57 @@ export default function BrandModelsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pt-6 pb-12">
+      {/* Breadcrumb */}
       <div className="text-sm text-gray-600 mb-4">
         <Link href="/brands" className="hover:underline">Brands</Link>
         <span className="mx-2">›</span>
         <span className="font-semibold">{brandInfo?.company_name || "Brand"}</span>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6">
+      {/* Title */}
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">
         {brandInfo?.company_name || "Brand"} Models
       </h1>
 
+      {/* Model Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-xl border bg-white shadow animate-pulse" />
+            <div key={i} className="aspect-square rounded-2xl border bg-gray-100 shadow animate-pulse" />
           ))}
         </div>
       ) : models.length === 0 ? (
-        <div className="text-gray-600">No models found for this brand.</div>
+        <div className="text-gray-600 text-center">No models found for this brand.</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {models.map((m) => (
-            <Link
-              key={m.id}
-              href={`/brands/${brand}/${m.id}`}  // model = bikeModelId
-              className="group bg-white border rounded-xl shadow hover:shadow-md transition p-4 flex flex-col items-center justify-center h-28 text-center"
-            >
-              {m.image && (
-                <img src={m.image} alt={m.name} className="w-12 h-12 mb-2 object-contain" />
-              )}
-              <span className="text-[15px] font-semibold group-hover:text-blue-600">
-                {m.name}
-              </span>
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 place-items-center">
+          {models.map((m) => {
+            const img = toImg(m.image);
+            return (
+              <Link
+                key={m.id}
+                href={`/brands/${brand}/${m.id}`}
+                className="group bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-lg transition p-4 flex flex-col items-center justify-between w-52 aspect-square text-center"
+              >
+                <div className="flex items-center justify-center flex-1 w-full">
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={m.name}
+                      className="max-h-32 max-w-[95%] object-contain transition-transform duration-200 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-gray-100 grid place-items-center text-lg font-semibold text-gray-500">
+                      {m.name?.[0]}
+                    </div>
+                  )}
+                </div>
+
+                <span className="text-[15px] font-semibold mt-3 group-hover:text-blue-600">
+                  {m.name}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
