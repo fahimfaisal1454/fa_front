@@ -60,7 +60,7 @@ export const handleDownloadPDF = (
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text(`Company Name: ${company || "—"}`, 40, yStart);
-  doc.text(`Date Range: ${fromDate || "—"} to ${toDate || "—"}`, 40, yStart + 32);
+  doc.text(`Date Range: ${fromDate || "—"} to ${toDate || "—"}`, 40, yStart + 18);
 
   // ===== TABLE HEAD =====
   const tableColumn = [
@@ -94,7 +94,7 @@ export const handleDownloadPDF = (
 
   // ===== TABLE =====
   autoTable(doc, {
-    startY: yStart + 60,
+    startY: yStart + 40,
     head: [tableColumn],
     body: tableRows,
     styles: {

@@ -143,7 +143,7 @@ function SidebarContent() {
         { label: "Cost Category Ledger Report", href: "/transaction/cost-ledger" },
         { label: "Sale Statement Report", href: "/transaction/customerStatement" },
         { label: "Brand Wise Sale Statement Report", href: "/transaction/brandSaleStatement" },
-        { label: "Purchase Statement Report", href: "/transaction/purchase-statement" },
+        { label: "Purchase Statement Report", href: "/transaction/purchaseStatement" },
         { label: "Part No wise Purchase Statement Report", href: "/transaction/partwise" },
         { label: "Income/Expenses", href: "/transaction/income-expense" }
       ]
